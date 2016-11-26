@@ -9,7 +9,7 @@ SDL-2.0.5-10608
 Install packaged dependecies
 sudo apt install libv4l-dev libx264-dev libssl-dev libasound2-dev
 
-Requires an external SIP server (e.g. Asterisk)
+Requires an external SIP server (e.g. Asterisk) and a second client to receive the call.
 
 
 Notable mentions:
