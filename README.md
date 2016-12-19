@@ -1,4 +1,11 @@
 # doorbelld
+
+
+************************
+* WARNING - INCOMPLETE *
+************************
+
+
 A simple doorbell intercom for Raspberry Pi
 
 Dependancies:

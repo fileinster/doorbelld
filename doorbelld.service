@@ -1,0 +1,17 @@
+[Unit]
+Description=Doorbell Daemon
+After=multi-user.target
+
+[Service]
+Type=idle
+PIDFile=/run/doorbelld.pid
+WorkingDirectory=/usr/local/bin/doorbelld/
+ExecStart=/usr/bin/python -u /usr/local/bin/doorbelld/doorbelld.py 
+SyslogIdentifier=doorbelld
+StandardOutput=syslog+console
+StandardError=syslog+console
+User=root
+
+[Install]
+WantedBy=multi-user.target
+
