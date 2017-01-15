@@ -1,0 +1,17 @@
+[Unit]
+Description=Chimer Daemon
+After=multi-user.target
+
+[Service]
+Type=idle
+PIDFile=/run/chimerd.pid
+WorkingDirectory=/usr/local/bin/chimerd/
+ExecStart=/usr/bin/python -u /usr/local/bin/chimerd/chimer.py 
+SyslogIdentifier=chimerd
+StandardOutput=syslog+console
+StandardError=syslog+console
+User=root
+
+[Install]
+WantedBy=multi-user.target
+
