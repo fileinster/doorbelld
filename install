@@ -1,5 +1,5 @@
 #!/bin/bash
-LOGFILE="/var/log/dorbelldinstaller.log"
+LOGFILE="/var/log/doorbelldinstaller.log"
 RETAIN_NUM_LINES=500
 
 
@@ -10,6 +10,7 @@ function logsetup {
 }
 
 function log {
+	echo "[$(date --rfc-3339=seconds)]: $*"
 	echo "[$(date --rfc-3339=seconds)]: $*" 
 }
 
@@ -18,7 +19,7 @@ function calc_wt_size() {
   WT_WIDTH=$(tput cols)
 
   if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
-    WT_WIDTH=80
+    WT_WIDTH=100
   fi
   if [ "$WT_WIDTH" -gt 178 ]; then
     WT_WIDTH=120
@@ -27,9 +28,9 @@ function calc_wt_size() {
 }
 
 function do_get_port() {
-	while True; do
-		BUTTON=$(whiptail --inputbox "TCP Port number" 8 78 $PORT --title "TCP PORT" 3>&1 1>&2 2>&3)
-		if [ $PORT > 65535 ] || [ $PORT < 1024 ]; then
+	while true; do
+		PORT=$(whiptail --inputbox "TCP Port number" 8 78 $PORT --title "TCP PORT" 3>&1 1>&2 2>&3)
+		if [ $PORT -gt 65535 ] || [ $PORT -lt 1024 ]; then
 			log "TCP port not in range. Port: $PORT"
 			whiptail --title "ERROR" --msgbox "TCP port not in range. Port: $PORT" 20 60
 		else
@@ -39,9 +40,9 @@ function do_get_port() {
 }
 
 function do_doorbell_install() {
-	while True; do
+	while true; do
 		LED=$(whiptail --inputbox "GPIO pin for LED? (using BCM numbering scheme)" 8 78 $LED --title "LED pin" 3>&1 1>&2 2>&3)
-		if [ $LED > 26 ] || [ $LED < 2 ]; then
+		if [ $LED -gt 26 ] || [ $LED -lt 2 ]; then
 			log "Wrong pin number. Please use BCM pin numbering. LED PIN $LED"
 			whiptail --title "ERROR" --msgbox "Wrong pin number. Please use BCM pin numbering." 20 60
 		else
@@ -49,9 +50,9 @@ function do_doorbell_install() {
 		fi
 	done
 
-	while True; do
+	while true; do
 		BUTTON=$(whiptail --inputbox "GPIO pin for BUTTON? (using BCM numbering scheme)" 8 78 $BUTTON --title "BUTTON pin" 3>&1 1>&2 2>&3)
-		if [ $BUTTON > 26 ] || [ $BUTTON < 2 ]; then
+		if [ $BUTTON -gt 26 ] || [ $BUTTON -lt 2 ]; then
 			log "Wrong pin number. Please use BCM pin numbering. BUTTON PIN $BUTTON"
 			whiptail --title "ERROR" --msgbox "Wrong pin number. Please use BCM pin numbering." 20 60
 		else
@@ -59,7 +60,7 @@ function do_doorbell_install() {
 		fi
 	done
 
-	while True; do
+	while true; do
 		HOSTS=$(whiptail --inputbox "Enter the IPs that should be chimed. Multiple hosts are separated ith a comma." 8 78 $HOSTS --title "Chimer HOSTS" 3>&1 1>&2 2>&3)
 		if ! [[ $HOSTS =~ ^(([0-9]{1,3}\.){3}[0-9]{1,3})(,(([0-9]{1,3}\.){3}[0-9]{1,3}))*$ ]] ; then
 			log "IPs not valid. Mutliple IPs must be separated by commas HOSTS: $HOSTS"
@@ -77,23 +78,25 @@ function do_doorbell_install() {
 		fi
 	done
 
-do_get_port
+	do_get_port
 
-cp doorbelld.py $INSTALL_LOC/doorbelld/doorbelld.py
-echo HOSTS=$HOSTS > $INSTALL_LOC/doorbelld/settings.py
-echo PORT=$PORT >> $INSTALL_LOC/doorbelld/settings.py
-echo BUTTON=$BUTTON >> $INSTALL_LOC/doorbelld/settings.py
-echo LED=$LED >> $INSTALL_LOC/doorbelld/settings.py
-echo INSTALLMODE=$INSTALLMODE >> $INSTALL_LOC/doorbelld/settings.py
-cp doorbelld.service /lib/systemd/system/doorbelld.service
+	cp doorbelld.py $INSTALL_LOC/doorbelld/doorbelld.py
+	chmod 644 $INSTALL_LOC/doorbelld/doorbelld.py
+	echo HOSTS=$HOSTS > $INSTALL_LOC/doorbelld/settings.py
+	echo PORT=$PORT >> $INSTALL_LOC/doorbelld/settings.py
+	echo BUTTON=$BUTTON >> $INSTALL_LOC/doorbelld/settings.py
+	echo LED=$LED >> $INSTALL_LOC/doorbelld/settings.py
+	echo INSTALLMODE=\"$INSTALLMODE\" >> $INSTALL_LOC/doorbelld/settings.py
+	cp doorbelld.service /lib/systemd/system/doorbelld.service
+	sed /lib/systemd/system/doorbelld.service -i -e "s/\/usr\/local\/bin/${INSTALL_LOC//\//\\\/}/"
 
-systemctl disable chimerd.service
-rm -f /lib/systemd/system/chimerd.service
-rm -rf $INSTALL_LOC/chimerd
+	systemctl disable chimerd.service
+	rm -f /lib/systemd/system/chimerd.service
+	rm -rf $INSTALL_LOC/chimerd
 
-chmod 644 /lib/systemd/system/doorbelld.service
-systemctl daemon-reload
-systemctl enable doorbelld.service
+	chmod 644 /lib/systemd/system/doorbelld.service
+	systemctl daemon-reload
+	systemctl enable doorbelld.service
 }
 
 function do_chimer_install() {
@@ -104,24 +107,26 @@ function do_chimer_install() {
 			echo snd-usb-audio >>/etc/modules
 		fi
 	fi
-cp doorbell.wav $INSTALL_LOC/chimerd/doorbell.wav
-cp chimer.py $INSTALL_LOC/chimerd/chimer.py
-echo PORT=$PORT > $INSTALL_LOC/chimerd/settings.py
-echo INSTALLMODE=$INSTALLMODE >> $INSTALL_LOC/chimerd/settings.py
-cp chimerd.service /lib/systemd/system/chimerd.service
+	cp doorbell.wav $INSTALL_LOC/chimerd/doorbell.wav
+	cp chimer.py $INSTALL_LOC/chimerd/chimer.py
+	chmod 644 $INSTALL_LOC/chimerd/chimer.py
+	echo PORT=$PORT > $INSTALL_LOC/chimerd/settings.py
+	echo INSTALLMODE=\"$INSTALLMODE\" >> $INSTALL_LOC/chimerd/settings.py
+	cp chimerd.service /lib/systemd/system/chimerd.service
+	sed /lib/systemd/system/chimerd.service -i -e "s/\/usr\/local\/bin/${INSTALL_LOC//\//\\\/}/"
 
-systemctl disable doorbelld.service
-rm -f /lib/systemd/system/doorbelld.service
-rm -rf $INSTALL_LOC/doorbelld
+	systemctl disable doorbelld.service
+	rm -f /lib/systemd/system/doorbelld.service
+	rm -rf $INSTALL_LOC/doorbelld
 
-chmod 644 /lib/systemd/system/chimerd.service
-systemctl daemon-reload
-systemctl enable chimerd.service
+	chmod 644 /lib/systemd/system/chimerd.service
+	systemctl daemon-reload
+	systemctl enable chimerd.service
 }
 
 #------Script Checks------------------------
 if [[ $EUID -ne 0 ]]; then
-	log "This script must be run as root. Try 'sudo install'\n"
+	log "This script must be run as root. Try 'sudo ./install'"
 	exit 1
 fi
 
@@ -170,7 +175,7 @@ else
 fi
 INSTALLTYPE=$(whiptail --title "Doorbelld Installation & Reconfiguration Tool" --radiolist "Mode Selection" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Finish --ok-button Select \
   "1 Doorbell" "Make this host the front door button" $DBBUT \
-  "2 Chimer" "Make this host a chimer (you can have multiple chimers per installation)" $CHBUT)
+  "2 Chimer" "Make this host a chimer (multiple chimers per install)" $CHBUT 3>&1 1>&2 2>&3)
 RET=$?
 if [ $RET -eq 1 ]; then
     exit 1
